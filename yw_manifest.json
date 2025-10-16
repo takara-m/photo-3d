@@ -1,0 +1,38 @@
+{
+  "name": "Monster Finder",
+  "version": "1.0.0",
+  "description": "カメラで撮影した現実世界の画像にAIがモンスターを生成・配置するWebアプリケーション",
+  "author": "Youware Team",
+  "aiProvider": "nano-banana",
+  "model": "gemini-2.5-flash-image",
+  "endpoints": [
+    {
+      "path": "/api/generate-monster",
+      "method": "POST",
+      "description": "画像にモンスターを生成・配置",
+      "input": {
+        "image": "multipart/form-data",
+        "prompt": "string"
+      },
+      "output": {
+        "imageUrl": "string"
+      }
+    }
+  ],
+  "features": [
+    "カメラ撮影機能（スマホ対応）",
+    "ファイルアップロード（ドラッグ&ドロップ対応）",
+    "4つのモチーフ選択（かわいい/怖い/ファンタジー/古代生物）",
+    "カスタムプロンプト入力",
+    "Before/After画像比較スライダー",
+    "生成画像のダウンロード",
+    "自動画像圧縮"
+  ],
+  "tags": [
+    "AI画像生成",
+    "カメラアプリ",
+    "AR風",
+    "モンスター",
+    "エンターテイメント"
+  ]
+}

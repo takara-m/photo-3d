@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//f/Web app/Youware/photo-handoff/**)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(npm install)",
+      "Bash(npm run dev:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
