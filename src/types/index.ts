@@ -8,6 +8,15 @@ export type ConversionMode = 'addFurniture' | 'makeRealistic';
 // スタイルタイプ
 export type StyleType = 'modern' | 'natural' | 'scandinavian' | 'minimalist' | 'luxury';
 
+// ピント位置
+export type FocusPosition = 'foreground' | 'center' | 'background';
+
+// ピント調整オプション
+export interface FocusOptions {
+  position: FocusPosition; // ピント位置（手前/中央/奥）
+  blurIntensity: number; // ボケ感の強さ (0-5)
+}
+
 // リアル化モード専用オプション
 export interface RealisticModeOptions {
   lightingBrightness: number; // 照明器具の明るさ (0-5)
@@ -25,6 +34,7 @@ export interface AppState {
   style: StyleType;
   customPrompt: string;
   realisticOptions: RealisticModeOptions; // リアル化モード専用オプション
+  focusOptions: FocusOptions; // ピント調整オプション
 }
 
 // 複数スタイル生成用の画像データ
@@ -49,6 +59,7 @@ export interface GenerationRequest {
   style: StyleType;
   customPrompt?: string;
   realisticOptions?: RealisticModeOptions; // リアル化モード専用オプション
+  focusOptions?: FocusOptions; // ピント調整オプション
 }
 
 // 画像生成レスポンス

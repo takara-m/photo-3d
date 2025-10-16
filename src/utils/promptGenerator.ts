@@ -1,4 +1,4 @@
-import type { ConversionMode, StyleType, RealisticModeOptions } from '../types';
+import type { ConversionMode, StyleType, RealisticModeOptions, FocusOptions } from '../types';
 
 /**
  * リアル化モード専用の統一プロンプト生成
@@ -8,22 +8,23 @@ function getMakeRealisticPrompt(options?: RealisticModeOptions): string {
   const outdoorBrightness = options?.outdoorBrightness ?? 0;
   const enhanceSmallItems = options?.enhanceSmallItems ?? false;
 
-  let lightingSection = `NATURAL LIGHTING - Maintain original lighting balance:
-- Keep the existing light levels from the original image
-- Preserve natural shadows and lighting atmosphere
-- Maintain original contrast between lit areas and shadow zones`;
+  let lightingSection = `NATURAL LIGHTING:`;
 
   // 照明器具の明るさが設定されている場合
   if (lightingBrightness > 0) {
     const intensityLevels = [
       '', // 0: 設定なし
-      'warm glow from indoor lighting with visible light emission',
-      'bright illumination from ceiling lights and lamps with strong light output',
-      'strong indoor lighting creating well-lit ambiance with glowing fixtures',
-      'very bright indoor lighting with intense illumination and radiant glow',
-      'extremely bright, powerfully glowing indoor lighting with dramatic intense effect and strong light rays'
+      'Warm ambient lighting throughout the room with gentle brightness',
+      'Well-lit interior with bright ambient lighting and even illumination',
+      'Strongly illuminated space with enhanced brightness from lighting fixtures',
+      'Very bright interior with high illumination levels and vibrant lighting',
+      'Extremely well-lit space with maximum brightness and brilliant illumination throughout'
     ];
-    lightingSection += `\n- Indoor lighting fixtures: ${intensityLevels[lightingBrightness]}`;
+    lightingSection += `\n- Indoor lighting level: ${intensityLevels[lightingBrightness]}`;
+    lightingSection += `\n- Focus on brightening the space, not the light sources themselves`;
+    lightingSection += `\n- Avoid creating bright spots or light blobs on fixtures`;
+  } else {
+    lightingSection += `\n- Preserve natural lighting from the original image`;
   }
 
   // 屋外の明るさが設定されている場合
@@ -183,18 +184,54 @@ Photorealistic leather, marble veining, metallic finishes, crystal details.`,
 };
 
 /**
+ * ピント調整用のプロンプトセクション生成
+ */
+function getFocusSection(focusOptions?: FocusOptions): string {
+  if (!focusOptions || focusOptions.blurIntensity === 0) {
+    return '';
+  }
+
+  const { position, blurIntensity } = focusOptions;
+
+  const positionDescriptions = {
+    foreground: 'foreground elements (objects closest to camera)',
+    center: 'center/middle distance elements',
+    background: 'background elements (far from camera)'
+  };
+
+  const blurLevels = [
+    '',
+    'Subtle depth of field with slight blur on out-of-focus areas',
+    'Moderate depth of field with noticeable blur on out-of-focus areas',
+    'Strong depth of field with significant blur on out-of-focus areas',
+    'Very strong depth of field with heavy blur on out-of-focus areas',
+    'Extreme depth of field with maximum blur creating strong bokeh effect on out-of-focus areas'
+  ];
+
+  return `
+
+DEPTH OF FIELD (Focus Adjustment):
+- Sharp focus on ${positionDescriptions[position]}
+- ${blurLevels[blurIntensity]}
+- Professional camera depth of field effect with natural bokeh
+- Maintain realistic focus transition between sharp and blurred areas`;
+}
+
+/**
  * AI画像生成用のプロンプトを生成
  * @param mode - 変換モード（家具追加 or リアル化）
  * @param style - スタイルタイプ（モダン、ナチュラル等）
  * @param customInput - ユーザーの追加指示（オプション）
  * @param realisticOptions - リアル化モード専用オプション（オプション）
+ * @param focusOptions - ピント調整オプション（オプション）
  * @returns 完全なプロンプト文字列
  */
 export function generatePrompt(
   mode: ConversionMode,
   style: StyleType,
   customInput: string = '',
-  realisticOptions?: RealisticModeOptions
+  realisticOptions?: RealisticModeOptions,
+  focusOptions?: FocusOptions
 ): string {
   // リアル化モードの場合は動的にプロンプトを生成
   let basePrompt: string;
@@ -210,6 +247,12 @@ export function generatePrompt(
   }
 
   let finalPrompt = basePrompt;
+
+  // ピント調整の追加
+  const focusSection = getFocusSection(focusOptions);
+  if (focusSection) {
+    finalPrompt += focusSection;
+  }
 
   // カスタム入力の追加
   if (customInput && customInput.trim()) {
@@ -243,7 +286,8 @@ export function getPromptPreview(
   mode: ConversionMode,
   style: StyleType,
   customInput: string = '',
-  realisticOptions?: RealisticModeOptions
+  realisticOptions?: RealisticModeOptions,
+  focusOptions?: FocusOptions
 ): string {
-  return generatePrompt(mode, style, customInput, realisticOptions);
+  return generatePrompt(mode, style, customInput, realisticOptions, focusOptions);
 }

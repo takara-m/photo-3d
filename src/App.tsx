@@ -4,7 +4,7 @@ import {
   ReactCompareSlider,
   ReactCompareSliderImage,
 } from 'react-compare-slider';
-import type { ConversionMode, StyleType, GeneratedImageData, RealisticModeOptions } from './types';
+import type { ConversionMode, StyleType, GeneratedImageData, RealisticModeOptions, FocusOptions, FocusPosition } from './types';
 import { AVAILABLE_MODES, AVAILABLE_STYLES } from './types';
 import { validateImageFile } from './utils/imageValidator';
 import { compressImage, fileToBase64 } from './utils/imageCompressor';
@@ -27,6 +27,12 @@ function App() {
     lightingBrightness: 0,
     outdoorBrightness: 0,
     enhanceSmallItems: false,
+  });
+
+  // ピント調整オプション
+  const [focusOptions, setFocusOptions] = useState<FocusOptions>({
+    position: 'center',
+    blurIntensity: 0,
   });
 
   // 複数スタイル一括生成用の状態
@@ -116,7 +122,8 @@ function App() {
           mode,
           targetStyle,
           customPrompt,
-          mode === 'makeRealistic' ? realisticOptions : undefined
+          mode === 'makeRealistic' ? realisticOptions : undefined,
+          focusOptions.blurIntensity > 0 ? focusOptions : undefined
         );
         console.log(`生成プロンプト (${targetStyle}):`, prompt);
 
@@ -155,7 +162,7 @@ function App() {
         throw err;
       }
     },
-    [mode, customPrompt, realisticOptions]
+    [mode, customPrompt, realisticOptions, focusOptions]
   );
 
   /**
@@ -256,7 +263,7 @@ function App() {
               <h1 className="text-3xl font-bold text-stone-800">CAD to Photo</h1>
             </div>
             <div className="text-xs text-stone-500">
-              v2025.01.16 16:17
+              v2025.01.16 16:45
             </div>
           </div>
           <p className="mt-2 text-sm text-stone-600">
@@ -484,6 +491,101 @@ function App() {
                   </div>
                 </div>
               )}
+
+              {/* ピント調整 */}
+              <div className="mb-6 space-y-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                <h3 className="text-sm font-semibold text-stone-800">
+                  ピント調整
+                </h3>
+
+                {/* ピント位置 */}
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 mb-3">
+                    ピント位置
+                  </label>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="focus-position"
+                        value="foreground"
+                        checked={focusOptions.position === 'foreground'}
+                        onChange={(e) =>
+                          setFocusOptions({
+                            ...focusOptions,
+                            position: e.target.value as FocusPosition,
+                          })
+                        }
+                        className="w-4 h-4 accent-stone-700"
+                      />
+                      <span className="text-sm text-stone-700">手前</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="focus-position"
+                        value="center"
+                        checked={focusOptions.position === 'center'}
+                        onChange={(e) =>
+                          setFocusOptions({
+                            ...focusOptions,
+                            position: e.target.value as FocusPosition,
+                          })
+                        }
+                        className="w-4 h-4 accent-stone-700"
+                      />
+                      <span className="text-sm text-stone-700">中央</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="focus-position"
+                        value="background"
+                        checked={focusOptions.position === 'background'}
+                        onChange={(e) =>
+                          setFocusOptions({
+                            ...focusOptions,
+                            position: e.target.value as FocusPosition,
+                          })
+                        }
+                        className="w-4 h-4 accent-stone-700"
+                      />
+                      <span className="text-sm text-stone-700">奥</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* ボケ感 */}
+                <div>
+                  <label
+                    htmlFor="blur-intensity"
+                    className="block text-sm font-medium text-stone-700 mb-2"
+                  >
+                    ボケ感: {focusOptions.blurIntensity}
+                    {focusOptions.blurIntensity === 0 && ' (なし)'}
+                  </label>
+                  <input
+                    type="range"
+                    id="blur-intensity"
+                    min="0"
+                    max="5"
+                    step="1"
+                    value={focusOptions.blurIntensity}
+                    onChange={(e) =>
+                      setFocusOptions({
+                        ...focusOptions,
+                        blurIntensity: parseInt(e.target.value),
+                      })
+                    }
+                    className="w-full h-2 bg-stone-300 rounded-lg appearance-none cursor-pointer accent-stone-700"
+                  />
+                  <div className="flex justify-between text-xs text-stone-500 mt-1">
+                    <span>0 (なし)</span>
+                    <span>3 (中)</span>
+                    <span>5 (最大)</span>
+                  </div>
+                </div>
+              </div>
 
               {/* カスタムプロンプト */}
               <div className="mb-6">
