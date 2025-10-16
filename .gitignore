@@ -9,7 +9,6 @@ lerna-debug.log*
 
 # Dependencies
 node_modules
-dist
 dist-ssr
 *.local
 
@@ -23,9 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Build output
-dist/
 
 # Environment variables
 .env
