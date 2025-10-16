@@ -250,9 +250,14 @@ function App() {
       {/* ヘッダー */}
       <header className="bg-white shadow-sm border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center gap-3">
-            <Camera className="w-8 h-8 text-stone-700" />
-            <h1 className="text-3xl font-bold text-stone-800">CAD to Photo</h1>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Camera className="w-8 h-8 text-stone-700" />
+              <h1 className="text-3xl font-bold text-stone-800">CAD to Photo</h1>
+            </div>
+            <div className="text-xs text-stone-500">
+              v2025.01.16 15:30
+            </div>
           </div>
           <p className="mt-2 text-sm text-stone-600">
             建築設計者向けフォトリアル変換ツール

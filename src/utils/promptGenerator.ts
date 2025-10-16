@@ -17,11 +17,11 @@ function getMakeRealisticPrompt(options?: RealisticModeOptions): string {
   if (lightingBrightness > 0) {
     const intensityLevels = [
       '', // 0: 設定なし
-      'subtle warm glow from indoor lighting fixtures',
-      'gentle illumination from ceiling lights and lamps',
-      'moderate indoor lighting creating comfortable ambiance',
-      'bright indoor lighting with clear illumination',
-      'strong, vivid indoor lighting with dramatic effect'
+      'warm glow from indoor lighting with visible light emission',
+      'bright illumination from ceiling lights and lamps with strong light output',
+      'strong indoor lighting creating well-lit ambiance with glowing fixtures',
+      'very bright indoor lighting with intense illumination and radiant glow',
+      'extremely bright, powerfully glowing indoor lighting with dramatic intense effect and strong light rays'
     ];
     lightingSection += `\n- Indoor lighting fixtures: ${intensityLevels[lightingBrightness]}`;
   }
@@ -105,7 +105,9 @@ Indoor Plants:
 - Visible leaf veins, natural shine, and organic shapes
 - Include realistic shadows and light interaction with leaves
 
-Tableware & Dishes:
+Tableware & Dishes (ON TABLES AND SURFACES):
+- Transform ALL items on tables, countertops, and surfaces into photorealistic elements
+- Replace any objects on table surfaces (dishes, cups, bowls, utensils, decorations, small items)
 - Transform into photorealistic ceramic, porcelain, or glass items
 - Show realistic surface reflections and material properties
 - Include subtle imperfections like fingerprints or slight wear
