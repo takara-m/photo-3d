@@ -256,7 +256,7 @@ function App() {
               <h1 className="text-3xl font-bold text-stone-800">CAD to Photo</h1>
             </div>
             <div className="text-xs text-stone-500">
-              v2025.01.16 15:30
+              v2025.01.16 16:17
             </div>
           </div>
           <p className="mt-2 text-sm text-stone-600">
