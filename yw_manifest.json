@@ -1,0 +1,33 @@
+{
+  "name": "CAD to Photo",
+  "version": "1.0.0",
+  "description": "建築設計者向けフォトリアル変換ツール - CAD画像を家具や装飾を配置した生活感あふれるフォトリアルな画像に変換",
+  "author": "Youware",
+  "ai_config": {
+    "cad_to_photo_generator": {
+      "model": "nano-banana",
+      "response_format": "b64_json",
+      "prompt_template": "Transform architectural CAD rendering into photorealistic interior with furniture and realistic materials",
+      "temperature": 0.7,
+      "max_tokens": 4000
+    }
+  },
+  "api": {
+    "endpoint": "https://api.youware.com/public/v1/ai/images/edits",
+    "method": "POST",
+    "headers": {
+      "Authorization": "Bearer sk-YOUWARE",
+      "Content-Type": "multipart/form-data"
+    }
+  },
+  "features": [
+    "AI画像生成",
+    "画像アップロード",
+    "スタイルプリセット",
+    "カスタムプロンプト",
+    "Before/After比較",
+    "ダウンロード機能"
+  ],
+  "target_audience": "建築設計者、インテリアデザイナー",
+  "tags": ["AI", "画像生成", "建築", "CAD", "フォトリアル"]
+}
