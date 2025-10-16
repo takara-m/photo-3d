@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
-import { Upload, Camera, Download, Loader2, Sparkles } from 'lucide-react';
+import { Upload, Camera, Download, Loader2, Sparkles, Brain } from 'lucide-react';
 import {
   ReactCompareSlider,
   ReactCompareSliderImage,
 } from 'react-compare-slider';
-import type { ConversionMode, StyleType, GeneratedImageData, RealisticModeOptions, FocusOptions, FocusPosition } from './types';
+import type { ConversionMode, StyleType, GeneratedImageData, RealisticModeOptions, FocusOptions, FocusPosition, AnalyzeResponse } from './types';
 import { AVAILABLE_MODES, AVAILABLE_STYLES } from './types';
 import { validateImageFile } from './utils/imageValidator';
 import { compressImage, fileToBase64 } from './utils/imageCompressor';
@@ -34,6 +34,11 @@ function App() {
     position: 'center',
     blurIntensity: 0,
   });
+
+  // AI分析状態
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+  const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
 
   // 複数スタイル一括生成用の状態
   const [isMultiGenerating, setIsMultiGenerating] = useState(false);
@@ -103,6 +108,69 @@ function App() {
     },
     [handleFile]
   );
+
+  /**
+   * Claude AIによる画像分析処理
+   */
+  const handleAnalyzeImage = useCallback(async () => {
+    if (!uploadedFile) {
+      setError('画像をアップロードしてください');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setError(null);
+    setAnalysisResult(null);
+    setGeneratedPrompt(null);
+
+    try {
+      console.log('Claude分析を開始...');
+
+      // 画像圧縮
+      const compressionResult = await compressImage(uploadedFile);
+      if (!compressionResult.success || !compressionResult.compressedFile) {
+        throw new Error(compressionResult.error || '画像圧縮に失敗しました');
+      }
+
+      // FormData作成
+      const formData = new FormData();
+      formData.append('image', compressionResult.compressedFile);
+      formData.append(
+        'prompt',
+        'この写真は3Dで作成されたものです。現実と比較して違和感がある個所を確認してください。Nano Bananaでリアルな写真に変換するためのプロンプトを考えてください。'
+      );
+
+      // Claude API呼び出し（YouWare API経由）
+      const response = await fetch('https://api.youware.com/public/v1/ai/analyze-image', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer sk-YOUWARE',
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `API Error: ${response.status}`);
+      }
+
+      const data: AnalyzeResponse = await response.json();
+
+      if (data.success && data.analysis && data.generatedPrompt) {
+        setAnalysisResult(data.analysis);
+        setGeneratedPrompt(data.generatedPrompt);
+        console.log('Claude分析完了！');
+      } else {
+        throw new Error(data.error || '分析結果の取得に失敗しました');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Claude分析に失敗しました';
+      setError(errorMessage);
+      console.error('Analysis error:', err);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, [uploadedFile]);
 
   /**
    * 単一スタイル画像生成処理
@@ -194,6 +262,67 @@ function App() {
   }, [uploadedFile, style, generateSingleImage]);
 
   /**
+   * AI分析変換モード：生成されたプロンプトで変換
+   */
+  const handleGenerateWithAnalyzedPrompt = useCallback(async () => {
+    if (!uploadedFile || !generatedPrompt) {
+      setError('プロンプトが生成されていません');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setGeneratedImage(null);
+
+    try {
+      console.log('AI分析プロンプトで画像生成を開始...');
+
+      // 画像圧縮
+      const compressionResult = await compressImage(uploadedFile);
+      if (!compressionResult.success || !compressionResult.compressedFile) {
+        throw new Error(compressionResult.error || '画像圧縮に失敗しました');
+      }
+
+      // FormData作成（生成されたプロンプトを使用）
+      const formData = new FormData();
+      formData.append('image', compressionResult.compressedFile);
+      formData.append('prompt', generatedPrompt);
+      formData.append('model', 'nano-banana');
+      formData.append('n', '1');
+      formData.append('response_format', 'b64_json');
+
+      // Nano Banana API呼び出し
+      const response = await fetch('https://api.youware.com/public/v1/ai/images/edits', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer sk-YOUWARE',
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.data && data.data[0] && data.data[0].b64_json) {
+        const imageData = `data:image/png;base64,${data.data[0].b64_json}`;
+        setGeneratedImage(imageData);
+        console.log('AI分析プロンプトでの画像生成成功！');
+      } else {
+        throw new Error('生成された画像データが見つかりません');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '画像生成に失敗しました';
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [uploadedFile, generatedPrompt]);
+
+  /**
    * 全スタイル一括生成処理
    */
   const handleGenerateAllStyles = useCallback(async () => {
@@ -263,7 +392,7 @@ function App() {
               <h1 className="text-3xl font-bold text-stone-800">CAD to Photo</h1>
             </div>
             <div className="text-xs text-stone-500">
-              v2025.01.16 16:45
+              v2025.10.16 17:30
             </div>
           </div>
           <p className="mt-2 text-sm text-stone-600">
@@ -587,72 +716,150 @@ function App() {
                 </div>
               </div>
 
+              {/* AI分析変換モード専用セクション */}
+              {mode === 'analyzeAndConvert' && (
+                <div className="mb-6 space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h3 className="text-sm font-semibold text-stone-800 flex items-center gap-2">
+                    <Brain className="w-4 h-4" />
+                    Claude AI分析
+                  </h3>
+
+                  {/* 分析実行ボタン */}
+                  <button
+                    onClick={handleAnalyzeImage}
+                    disabled={!uploadedImage || isAnalyzing || isLoading}
+                    className="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-stone-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Claude分析中...
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="w-5 h-5" />
+                        Claude分析を実行
+                      </>
+                    )}
+                  </button>
+
+                  {/* 分析結果表示 */}
+                  {analysisResult && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-stone-700 mb-2">
+                          違和感の指摘:
+                        </label>
+                        <div className="p-3 bg-white rounded border border-stone-200 text-sm text-stone-700 whitespace-pre-wrap">
+                          {analysisResult}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-stone-700 mb-2">
+                          生成されたプロンプト（編集可能）:
+                        </label>
+                        <textarea
+                          value={generatedPrompt || ''}
+                          onChange={(e) => setGeneratedPrompt(e.target.value)}
+                          rows={5}
+                          className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
+                        />
+                      </div>
+
+                      {/* AI分析プロンプトで変換ボタン */}
+                      <button
+                        onClick={handleGenerateWithAnalyzedPrompt}
+                        disabled={!generatedPrompt || isLoading}
+                        className="w-full px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 disabled:bg-stone-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            変換中...
+                          </>
+                        ) : (
+                          <>
+                            <Camera className="w-5 h-5" />
+                            このプロンプトで変換
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* カスタムプロンプト */}
-              <div className="mb-6">
-                <label
-                  htmlFor="custom-prompt"
-                  className="block text-sm font-medium text-stone-700 mb-2"
-                >
-                  追加指示（オプション）
-                </label>
-                <textarea
-                  id="custom-prompt"
-                  value={customPrompt}
-                  onChange={(e) => setCustomPrompt(e.target.value)}
-                  placeholder="例: 大きなソファと観葉植物を追加"
-                  rows={3}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-stone-500 focus:border-transparent resize-none"
-                />
-              </div>
+              {mode !== 'analyzeAndConvert' && (
+                <div className="mb-6">
+                  <label
+                    htmlFor="custom-prompt"
+                    className="block text-sm font-medium text-stone-700 mb-2"
+                  >
+                    追加指示（オプション）
+                  </label>
+                  <textarea
+                    id="custom-prompt"
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    placeholder="例: 大きなソファと観葉植物を追加"
+                    rows={3}
+                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-stone-500 focus:border-transparent resize-none"
+                  />
+                </div>
+              )}
 
               {/* 生成ボタン */}
-              <div className="space-y-3">
-                <button
-                  onClick={handleGenerate}
-                  disabled={!uploadedImage || isLoading || isMultiGenerating}
-                  className="w-full px-6 py-3 bg-stone-700 text-white font-medium rounded-lg hover:bg-stone-800 disabled:bg-stone-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      生成中...
-                    </>
-                  ) : (
-                    <>
-                      <Camera className="w-5 h-5" />
-                      画像を変換する
-                    </>
-                  )}
-                </button>
+              {mode !== 'analyzeAndConvert' && (
+                <div className="space-y-3">
+                  <button
+                    onClick={handleGenerate}
+                    disabled={!uploadedImage || isLoading || isMultiGenerating}
+                    className="w-full px-6 py-3 bg-stone-700 text-white font-medium rounded-lg hover:bg-stone-800 disabled:bg-stone-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        生成中...
+                      </>
+                    ) : (
+                      <>
+                        <Camera className="w-5 h-5" />
+                        画像を変換する
+                      </>
+                    )}
+                  </button>
 
-                {/* 全スタイル一括生成ボタン */}
-                <button
-                  onClick={handleGenerateAllStyles}
-                  disabled={!uploadedImage || isLoading || isMultiGenerating}
-                  className="w-full px-6 py-3 bg-amber-600 text-white font-medium rounded-lg hover:bg-amber-700 disabled:bg-stone-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-                >
-                  {isMultiGenerating ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      {currentGeneratingStyle && (
-                        <span>
-                          {
-                            AVAILABLE_STYLES.find(
-                              (s) => s.value === currentGeneratingStyle
-                            )?.label
-                          }
-                          を生成中...
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-5 h-5" />
-                      全スタイルを一括生成
-                    </>
-                  )}
-                </button>
-              </div>
+                  {/* 全スタイル一括生成ボタン */}
+                  <button
+                    onClick={handleGenerateAllStyles}
+                    disabled={!uploadedImage || isLoading || isMultiGenerating}
+                    className="w-full px-6 py-3 bg-amber-600 text-white font-medium rounded-lg hover:bg-amber-700 disabled:bg-stone-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                  >
+                    {isMultiGenerating ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        {currentGeneratingStyle && (
+                          <span>
+                            {
+                              AVAILABLE_STYLES.find(
+                                (s) => s.value === currentGeneratingStyle
+                              )?.label
+                            }
+                            を生成中...
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-5 h-5" />
+                        全スタイルを一括生成
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

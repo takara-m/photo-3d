@@ -3,7 +3,7 @@
  */
 
 // 変換モード
-export type ConversionMode = 'addFurniture' | 'makeRealistic';
+export type ConversionMode = 'addFurniture' | 'makeRealistic' | 'analyzeAndConvert';
 
 // スタイルタイプ
 export type StyleType = 'modern' | 'natural' | 'scandinavian' | 'minimalist' | 'luxury';
@@ -15,6 +15,21 @@ export type FocusPosition = 'foreground' | 'center' | 'background';
 export interface FocusOptions {
   position: FocusPosition; // ピント位置（手前/中央/奥）
   blurIntensity: number; // ボケ感の強さ (0-5)
+}
+
+// Claude分析結果
+export interface AnalyzeResponse {
+  success: boolean;
+  analysis?: string; // 違和感の指摘
+  generatedPrompt?: string; // Nano Banana用プロンプト
+  error?: string;
+}
+
+// 分析状態
+export interface AnalysisState {
+  isAnalyzing: boolean;
+  analysisResult: string | null; // 違和感の指摘
+  generatedPrompt: string | null; // 生成されたプロンプト（編集可能）
 }
 
 // リアル化モード専用オプション
@@ -123,6 +138,11 @@ export const AVAILABLE_MODES: ModeOption[] = [
     value: 'makeRealistic',
     label: 'リアル化',
     description: '既存家具をフォトリアルな質感に変換',
+  },
+  {
+    value: 'analyzeAndConvert',
+    label: 'AI分析変換',
+    description: 'Claude AIが画像を分析してリアル化プロンプトを生成',
   },
 ];
 
